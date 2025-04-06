@@ -6,10 +6,11 @@
 
 use std::cmp::Ord;
 use std::default::Default;
+use std::mem::swap;
 
 pub struct Heap<T>
-where
-    T: Default,
+    where
+        T: Default,
 {
     count: usize,
     items: Vec<T>,
@@ -17,8 +18,8 @@ where
 }
 
 impl<T> Heap<T>
-where
-    T: Default,
+    where
+        T: Default,
 {
     pub fn new(comparator: fn(&T, &T) -> bool) -> Self {
         Self {
@@ -38,6 +39,15 @@ where
 
     pub fn add(&mut self, value: T) {
         //TODO
+        self.items.push(value);
+        self.count += 1;
+        let mut index = self.items.len() - 1;
+        let mut top = index / 2;
+        while top > 0 && (self.comparator)(&self.items[index], &self.items[top]) {
+            self.items.swap(index, top);
+            index = top;
+            top = top / 2;
+        }
     }
 
     fn parent_idx(&self, idx: usize) -> usize {
@@ -58,13 +68,13 @@ where
 
     fn smallest_child_idx(&self, idx: usize) -> usize {
         //TODO
-		0
+        0
     }
 }
 
 impl<T> Heap<T>
-where
-    T: Default + Ord,
+    where
+        T: Default + Ord,
 {
     /// Create a new MinHeap
     pub fn new_min() -> Self {
@@ -78,14 +88,45 @@ where
 }
 
 impl<T> Iterator for Heap<T>
-where
-    T: Default,
+    where
+        T: Default,
 {
     type Item = T;
 
     fn next(&mut self) -> Option<T> {
         //TODO
-		None
+        if self.is_empty() {
+            None
+        } else if self.len() == 1 {
+            self.count -= 1;
+            self.items.pop()
+        } else {
+            let last = self.len();
+            self.items.swap(1, last);
+            self.count -= 1;
+            let opt = self.items.pop();
+
+            // heapify
+            let mut index = 1usize;
+            while index < self.items.len() {
+                let left = index * 2;
+                let right = left + 1;
+                let mut smallest = index;
+                if left < self.items.len() && (self.comparator)(&self.items[left], &self.items[smallest]) {
+                    smallest = left;
+                }
+                if right < self.items.len() && (self.comparator)(&self.items[right], &self.items[smallest]) {
+                    smallest = right;
+                }
+                if index != smallest {
+                    self.items.swap(index, smallest);
+                    index = smallest;
+                } else {
+                    break;
+                }
+            }
+            opt
+        }
     }
 }
 
@@ -94,8 +135,8 @@ pub struct MinHeap;
 impl MinHeap {
     #[allow(clippy::new_ret_no_self)]
     pub fn new<T>() -> Heap<T>
-    where
-        T: Default + Ord,
+        where
+            T: Default + Ord,
     {
         Heap::new(|a, b| a < b)
     }
@@ -106,8 +147,8 @@ pub struct MaxHeap;
 impl MaxHeap {
     #[allow(clippy::new_ret_no_self)]
     pub fn new<T>() -> Heap<T>
-    where
-        T: Default + Ord,
+        where
+            T: Default + Ord,
     {
         Heap::new(|a, b| a > b)
     }
